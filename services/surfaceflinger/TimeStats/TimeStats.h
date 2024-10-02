@@ -185,9 +185,9 @@ public:
 
 namespace impl {
 
-class TimeStats : public android::TimeStats {
     using PowerMode = android::hardware::graphics::composer::V2_4::IComposerClient::PowerMode;
-
+    extern PowerMode globalPowerMode;
+class TimeStats : public android::TimeStats {
     struct FrameTime {
         uint64_t frameNumber = 0;
         nsecs_t postTime = 0;
@@ -286,6 +286,12 @@ public:
 
     void pushCompositionStrategyState(const ClientCompositionRecord&) override;
 
+    PowerMode getPowerMode() const {
+        std::lock_guard<std::mutex> lock(mMutex);
+        ALOGI("getPowerMode called, returning: %d", globalPowerMode);
+        return globalPowerMode;
+    }
+
     static const size_t MAX_NUM_TIME_RECORDS = 64;
 
 private:
@@ -307,7 +313,7 @@ private:
     void dump(bool asProto, std::optional<uint32_t> maxLayers, std::string& result);
 
     std::atomic<bool> mEnabled = false;
-    std::mutex mMutex;
+    mutable std::mutex mMutex;
     TimeStatsHelper::TimeStatsGlobal mTimeStats;
     // Hashmap for LayerRecord with layerId as the hash key
     std::unordered_map<int32_t, LayerRecord> mTimeStatsTracker;

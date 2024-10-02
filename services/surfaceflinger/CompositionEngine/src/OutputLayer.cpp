@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "DisplayDevice.h"
+#include "TimeStats/TimeStats.h"
 #include <DisplayHardware/Hal.h>
 #include <android-base/stringprintf.h>
 #include <compositionengine/DisplayColorProfile.h>
@@ -40,11 +41,13 @@
 
 using aidl::android::hardware::graphics::composer3::Composition;
 
+using PowerMode = android::hardware::graphics::composer::V2_4::IComposerClient::PowerMode;
 namespace android::compositionengine {
 
 OutputLayer::~OutputLayer() = default;
 
 namespace impl {
+android::impl::TimeStats timeStatsInstance;
 
 namespace {
 
@@ -465,8 +468,10 @@ void OutputLayer::writeOutputDependentGeometryStateToHWC(HWC2::Layer* hwcLayer,
         z_udfps = getUdfpsDimZOrder(z);
     } else if (strncmp(getLayerFE().getDebugName(), AOD_LAYER_NAME,
                        strlen(AOD_LAYER_NAME)) == 0) {
-        // Need to query for PowerMode::DOZE before setting this
-        z_udfps = getUdfpsAodZOrder(z);
+        ALOGI("getPowerMode: %d", timeStatsInstance.getPowerMode());
+        if (timeStatsInstance.getPowerMode() == PowerMode::DOZE) {
+                z_udfps = getUdfpsAodZOrder(z);
+        }
     } else if ((strncmp(getLayerFE().getDebugName(), UDFPS_ICON_LAYER_NAME,
                         strlen(UDFPS_ICON_LAYER_NAME)) == 0) ||
                (strncmp(getLayerFE().getDebugName(), UDFPS_BIOMETRIC_PROMPT_LAYER_NAME,

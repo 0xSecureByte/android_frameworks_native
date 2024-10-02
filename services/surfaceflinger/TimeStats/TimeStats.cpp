@@ -36,6 +36,7 @@
 namespace android {
 
 namespace impl {
+PowerMode globalPowerMode = PowerMode::OFF;
 
 namespace {
 
@@ -914,15 +915,16 @@ void TimeStats::flushPowerTimeLocked() {
 void TimeStats::setPowerMode(PowerMode powerMode) {
     if (!mEnabled.load()) {
         std::lock_guard<std::mutex> lock(mMutex);
-        mPowerTime.powerMode = powerMode;
+        mPowerTime.powerMode = globalPowerMode = powerMode;
+        ALOGI("setPowerMode (disabled): %d, globalPowerMode: %d", powerMode, globalPowerMode);
         return;
     }
-
     std::lock_guard<std::mutex> lock(mMutex);
     if (powerMode == mPowerTime.powerMode) return;
 
+    ALOGI("setPowerMode: %d, globalPowerMode: %d", powerMode, globalPowerMode);
     flushPowerTimeLocked();
-    mPowerTime.powerMode = powerMode;
+    mPowerTime.powerMode = globalPowerMode = powerMode;
 }
 
 void TimeStats::recordRefreshRate(uint32_t fps, nsecs_t duration) {
